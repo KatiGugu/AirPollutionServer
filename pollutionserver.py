@@ -5,12 +5,14 @@ from aiohttp import ClientSession, web
 
 
 app_session = None
-#The key may be blocked by openweathermap.com. You should get your own key. It's free.
+# The key may be blocked by openweathermap.com. You should get your own key.
+#  It's free.
 API_key = '2a4ff86f9aaa70041ec8e82db64abf56'
 
 
-async def get_datapollution(lat, lon, forecast = True ):
-    '''Returns current air pollution data or forecast for 5 days for point with coord (lat, lon)''' 
+async def get_datapollution(lat, lon, forecast=True):
+    '''Returns current air pollution data or forecast for 5 days for point w
+    ith coord (lat, lon)'''
 
     if forecast:
         url = 'http://api.openweathermap.org/data/2.5/air_pollution/forecast'
@@ -27,24 +29,28 @@ async def get_datapollution(lat, lon, forecast = True ):
             return 'Нет данных'
 
 
-async def Reverse_geocoding(lon, lat, limit = '1'):
-    #http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lon}&limit={limit}&appid={API key}
+async def Reverse_geocoding(lon, lat, limit='1'):
+    # http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lon}&limit=
+    # {limit}&appid={API key}
     url = 'http://api.openweathermap.org/geo/1.0/zip'
     params = {'lon': lon, 'lat': lat, 'limit': limit, 'APPID': config.API_key}
     async with app_session.get(url=url, params=params) as response:
         json_data = await response.json()
         try:
-        
-            return json_data[0]['name'], json_data[0]['lon'], json_data[0]['lat'] 
+            return (json_data[0]['name'], json_data[0]['lon'],
+                    json_data[0]['lat'])
         except KeyError:
             return '', '', ''
 
 
-async def geocoding(cityname = '', zipcode = '', statecode = '', countrycode = '', limit = '1'):
+async def geocoding(cityname='', zipcode='', statecode='', countrycode='',
+                    limit='1'):
     '''Determines the coordinates of the city by postal code or cityname'''
 
-    #http://api.openweathermap.org/geo/1.0/direct?q={city name},{state code},{country code}&limit={limit}&appid={API key}
-    #http://api.openweathermap.org/geo/1.0/zip?zip={zip code},{country code}&appid={API key}
+    # http://api.openweathermap.org/geo/1.0/direct?q={city name},{state code},
+    # {country code}&limit={limit}&appid={API key}
+    # http://api.openweathermap.org/geo/1.0/zip?zip={zip code},{country code}
+    # &appid={API key}
 
     zip = False
     if zipcode != '' and countrycode != '':
@@ -73,7 +79,8 @@ async def geocoding(cityname = '', zipcode = '', statecode = '', countrycode = '
             if zip:
                 return json_data['name'], json_data['lon'], json_data['lat']
             else:
-                return json_data[0]['name'], json_data[0]['lon'], json_data[0]['lat'] 
+                return (json_data[0]['name'], json_data[0]
+                        ['lon'], json_data[0]['lat'])
         except KeyError:
             return '', '', ''
 
@@ -93,9 +100,10 @@ async def get_translation(text, source, target):
 
 async def handle(request):
 
-    #localhost:8080/pollution?city={city name}&country={country code}&forecust={True/False}
-    #localhost:8080/pollution?zip={zip/post code}&country={country code}
-    #localhost:8080/pollution?lon={longitude}&lat={latitude}
+    # localhost:8080/pollution?city={city name}&country={country code}&
+    # forecust={True/False}
+    # localhost:8080/pollution?zip={zip/post code}&country={country code}
+    # localhost:8080/pollution?lon={longitude}&lat={latitude}
 
     cityname = ''
     zipcode = ''
@@ -103,7 +111,7 @@ async def handle(request):
     countrycode = ''
     forecast = True
 
-    if 'forecast' in request.rel_url.query:  
+    if 'forecast' in request.rel_url.query:
         if request.rel_url.query['forecast'] == 'False':
             forecast = False
         else:
@@ -128,10 +136,11 @@ async def handle(request):
         result = {'air_pollution': data_pollution}
         return web.Response(text=json.dumps(result, ensure_ascii=False))
 
-    else:  
-        return web.Response(text='Bad request!!!')    
+    else:
+        return web.Response(text='Bad request!!!')
 
-    cityname, lon, lat = await geocoding(cityname , zipcode, statecode, countrycode)
+    cityname, lon, lat = await geocoding(cityname, zipcode,
+                                         statecode, countrycode)
     data_pollution = await get_datapollution(lon, lat, forecast)
     data_pollution['name'] = cityname
     result = {'air_pollution': data_pollution}
